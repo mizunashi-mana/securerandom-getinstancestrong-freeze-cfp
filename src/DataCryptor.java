@@ -3,7 +3,6 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import javax.crypto.NoSuchPaddingException;
@@ -20,7 +19,7 @@ public class DataCryptor {
     private static final int GCM_NONCE_BYTE_LENGTH = 12;
     private static final int GCM_TAG_BIT_LENGTH = 128;
 
-    public static final SecretKey generateKey() {
+    public static final byte[] generateKey() {
         KeyGenerator keyGenerator;
         try {
             keyGenerator = KeyGenerator.getInstance("AES");
@@ -28,7 +27,7 @@ public class DataCryptor {
             throw new RuntimeException("unreachable: expect AES support", e);
         }
         keyGenerator.init(KEY_BIT_LENGTH);
-        return keyGenerator.generateKey();
+        return keyGenerator.generateKey().getEncoded();
     }
     
     private final ThreadLocal<Cipher> cipherThreadLocal = new ThreadLocal<>() {
@@ -50,11 +49,10 @@ public class DataCryptor {
     private final SecretKeySpec keySpec;
     private final SecureRandom random;
 
-    DataCryptor(SecretKey key) {
-        assert key.getAlgorithm().equals(KEY_ALGORITHM);
-        assert key.getEncoded().length * 8 == KEY_BIT_LENGTH;
+    DataCryptor(byte[] key) {
+        assert key.length * 8 == KEY_BIT_LENGTH;
 
-        this.keySpec = new SecretKeySpec(key.getEncoded(), KEY_ALGORITHM);
+        this.keySpec = new SecretKeySpec(key, KEY_ALGORITHM);
         try {
             this.random = SecureRandom.getInstanceStrong();
         } catch (NoSuchAlgorithmException e) {
